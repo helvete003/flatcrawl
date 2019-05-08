@@ -1,10 +1,12 @@
+import re
 from datetime import datetime
 from bs4 import BeautifulSoup
 
 class Immowelt:
     realtor_blacklist = ['Grand City Property Ltd. Zweigniederlassung Deutschland','Vonovia Kundenservice GmbH','LEG Wohnen NRW  GmbH Bereich Zentrales Vermietungsmanagement']
     BASE_URL = 'https://www.immowelt.de'
-    START_URL = '/liste/wuppertal-elberfeld/wohnungen/mieten?lat=51.2482&lon=7.1538&sr=50&roomi=2&prima=400&wflmi=60&sort=distance'
+    def __init__(self,start):
+        self.start_url = start
 
     #Gibt die nächste übersichtsseite zurück
     def nextPageRule(self, bs):
@@ -33,7 +35,7 @@ class Immowelt:
     def exposeSearch(self, bs):
         energy = self.getEnergyCarrier(bs)
         date = self.getFreeDate(bs)
-        search_date = datetime(2019,8,30)
+        search_date = datetime(2019,9,30)
         if energy == 'Gas' and date != None:
             if date > search_date:
                 return True
@@ -41,34 +43,51 @@ class Immowelt:
 
 
     def getEnergyCarrier(self, bs):
-        tag = bs.find('dd', class_='is24qa-wesentliche-energietraeger')
-        if tag != None:
-            return tag.get_text().strip()
+        tag = bs.find('div', id='divImmobilie')
+        data = None
+        for row in tag.find_all('div', class_='datarow'):
+            text = row.find('span', class_='datalabel').get_text().strip()
+            if text == 'Wesentliche Energieträger':
+                data = row.find('span', class_='datacontent').get_text().strip()
+                break
+        if data != None:
+            return data
         return None
 
     def getFreeDate(self,bs):
-        tag = bs.find('dd', class_='is24qa-bezugsfrei-ab')
-        if tag != None:
+        tag = bs.find('div', id='divImmobilie')
+        parent = None
+        for elem in tag.find_all('div', class_='section_label iw_left'):
+            if elem.get_text().strip() == 'Die Wohnung':
+                parent = elem.find_parent('div', class_="clear")
+                break
+        parent = parent.find('div',class_='iw_right')
+        if parent != None:
             try:
-                return datetime.strptime(tag.get_text().strip(), '%d.%m.%Y')
+                text = re.search(r'\d{2}\.\d{2}\.\d{4}', parent.get_text())
+                return datetime.strptime(text.group(), '%d.%m.%Y')
             except:
                 return None
         return None
 
     def getName(self,bs):
-        tag = bs.find('h1', id='expose-title')
+        tag = bs.find('div', class_='quickfacts iw_left')
+        tag = tag.find('h1')
         if tag != None:
             return tag.get_text().strip()
         return None
 
     def getFullRent(self,bs):
-        tag = bs.find('dd', class_='is24qa-gesamtmiete')
-        if tag != None:
-            return tag.get_text().strip()
-        return None
+        return 'Muss berechnet werden'
 
     def getBond(self,bs):
-        tag = bs.find('div', class_='is24qa-kaution-o-genossenschaftsanteile')
-        if tag != None:
-            return tag.get_text().strip()
+        tag = bs.find('div', id='divPreise')
+        parent = None
+        for elem in tag.find_all('div', class_='section_label iw_left'):
+            if elem.get_text().strip() == 'Kaution':
+                parent = elem.find_parent('div', class_="clear")
+                break
+
+        if parent != None:
+            return parent.find('div',class_='iw_right').get_text().strip()
         return None

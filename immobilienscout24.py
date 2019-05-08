@@ -4,7 +4,8 @@ from bs4 import BeautifulSoup
 class Immobilienscout24:
     realtor_blacklist = ['Grand City Property','Vonovia SE','LEG Wohnen NRW GmbH']
     BASE_URL = 'https://www.immobilienscout24.de'
-    START_URL = '/Suche/S-T/Wohnung-Miete/Umkreissuche/Wuppertal/42119/-195778/2370902/-/-/50/2,00-/60,00-/EURO--200,00'
+    def __init__(self,start):
+        self.start_url = start
 
     #Gibt die nächste übersichtsseite zurück
     def nextPageRule(self, bs):
@@ -32,7 +33,7 @@ class Immobilienscout24:
     def exposeSearch(self, bs):
         energy = self.getEnergyCarrier(bs)
         date = self.getFreeDate(bs)
-        search_date = datetime(2019,8,30)
+        search_date = datetime(2019,9,30)
         if energy == 'Gas' and date != None:
             if date > search_date:
                 return True

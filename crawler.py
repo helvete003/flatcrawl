@@ -8,7 +8,7 @@ class Crawler:
     def start(self):
         self.expose_links = []
         print("Crawle Wohnungen...")
-        if self.crawl(self.portal.BASE_URL+self.portal.START_URL):
+        if self.crawl(self.portal.BASE_URL+self.portal.start_url):
             print("Crawling Beendet")
             print("Crawle "+str(len(self.expose_links))+" Exposes...")
             return self.crawlExpose()
